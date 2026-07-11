@@ -1,0 +1,16 @@
+{
+  "name": "qiita-frontend-digest",
+  "version": "0.0.0",
+  "private": false,
+  "type": "module",
+  "scripts": {
+    "digest": "tsx src/main.ts",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  }
+}

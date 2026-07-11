@@ -1,0 +1,12 @@
+# config.yaml にコピーして使用(config.yaml はコミットしない)
+feeds:
+  - name: JSer.info
+    url: https://jser.info/rss/
+github_releases: []
+#  - owner: facebook
+#    repo: react
+qiita:
+  private: true          # 公開は明示的に false へ変更した場合のみ
+  tags: [frontend, news]
+llm:
+  enabled: false         # オプトイン。有効時はAPIキーを環境変数で渡す

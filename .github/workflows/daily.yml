@@ -1,0 +1,31 @@
+name: daily-digest
+on:
+  schedule:
+    - cron: '0 22 * * *'   # UTC 22:00 = JST 翌朝 7:00
+  workflow_dispatch:         # 手動実行も可能にしておく(動作確認用)
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write        # state.json / articles/ のコミットバック用
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run digest
+        env:
+          QIITA_TOKEN: ${{ secrets.QIITA_TOKEN }}
+      - name: Commit back state and articles
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add state.json articles/ logs/
+          git diff --cached --quiet || git commit -m "chore: daily digest $(date -u +%F)"
+          git push
