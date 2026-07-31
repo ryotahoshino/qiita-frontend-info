@@ -21,6 +21,19 @@ GitHub Actions上で毎日自動実行し、`state.json` と `articles/` がコ�
 - 変更が無い場合は空コミットを作らない
 - `pnpm run digest` が異常終了(exit code 非0)した場合、コミット・pushは行われず、ワークフロー自体も失敗として記録される
 - `config.yaml.example` は常に `parseConfig`(spec 001, `src/config.ts`)でエラーなくパースできる内容を維持する(CI起動の前提となるため)
+- ワークフロー環境に `TZ: Asia/Tokyo` を設定する
+- `articles/` のファイル名や Qiita投稿タイトルに使う日付は、UTCではなく **JST基準** で算出する。
+  ランナーの実行時刻は UTC(cron `0 22 * * *` = JST 翌朝7:00)であり、日付計算がUTC基準のままだと
+  JSTでの「その日」の記事が前日日付のファイルになってしまう。
+  なお `Date.prototype.toISOString()` は常にUTCを返す仕様のため、**ワークフローに `TZ: Asia/Tokyo` を
+  設定するだけでは修正されない**(TZはローカル時刻系メソッドにのみ影響し、`toISOString()`には影響しない)。
+  日付フォーマット処理自体を、`Intl.DateTimeFormat`に`timeZone: "Asia/Tokyo"`を明示するなどTZ環境変数の
+  設定有無に依存しない形でJST基準に直すか、少なくともTZ設定と整合する実装(`toISOString()`をやめ
+  ローカル時刻系メソッドに置き換える等)に修正する必要がある。この修正は spec 001 で実装済みの
+  日付フォーマット処理(`articles/`のパス生成・Markdown生成・Qiita投稿タイトル生成)にまたがるため、
+  実装時は該当箇所を横断的に洗い出すこと
+- README.md の `Setup` 節(現状 `<!-- TODO: トークン発行 → Secrets登録 → config.yaml編集 の手順 -->` の
+  プレースホルダのみ)に、Qiitaトークンの発行・GitHub Secretsへの登録・`config.yaml`編集の手順を記載する
 
 ## 受け入れ条件
 
@@ -51,6 +64,14 @@ GitHub Actions上で毎日自動実行し、`state.json` と `articles/` がコ�
   Then: ワークフローが自動的にトリガーされる(GitHub Actionsの実行履歴で確認。即時に検証できないため、
         翌日以降の実行履歴確認、または `workflow_dispatch` による代替確認で判断する)
 
+- `[手動]` Given: cron が UTC 22:00(= JST 翌朝7:00)に発火し記事を収集する / When: ワークフローが実行される
+  Then: `articles/` に生成されるファイル名の日付が **JST基準の日付**になる
+        (UTC日付である前日日付の `YYYY-MM-DD.md` にはならない)
+
+- `[vitest]` Given: UTC 22:00(= JST翌7:00)に相当する `Date` インスタンス / When: 日付フォーマット処理で
+  日付文字列に変換する
+  Then: JST基準の日付(UTC側の「当日」ではなく翌日)が返る
+
 ## スコープ外(今回やらないこと)
 
 - `git push` 競合時のリトライ・rebase処理(cron 1日1回 + 手動実行のみを想定した最小構成のため)
@@ -58,6 +79,9 @@ GitHub Actions上で毎日自動実行し、`state.json` と `articles/` がコ�
 - ワークフロー失敗時のSlack/メール等の通知連携
 - `config.yaml.example` 以外の実運用フィード構成(GitHub Repository Variables経由の設定切り替えなど)
 - GithubReleasesCollector(→ 002ではなく既存どおり別spec)、TOPICS.mdフィルタ(→ 003)
+- **QIITA_TOKEN を GitHub Secretsへ実際に登録する操作そのもの**(GitHub UI上でリポジトリ所有者が行う
+  一度きりの手動作業であり、コードやワークフローとして実装できるものではないため)。
+  本specの要件に含めるのは、その**手順をREADME.mdに文書化すること**までであり、登録作業自体はスコープ外
 
 ## 関連
 
