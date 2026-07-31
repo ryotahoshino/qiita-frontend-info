@@ -23,6 +23,7 @@ export interface DigestDeps {
   collectors: Collector[];
   today: Date;
   qiitaToken: string | undefined;
+  tags?: string[];
   loadState(): Promise<StateFile | null>;
   saveState(state: StateFile): Promise<void>;
   readArticleFile(): Promise<string | null>;
@@ -102,7 +103,7 @@ export async function runDigest(deps: DigestDeps): Promise<DigestResult> {
     await deps.postToQiita({
       title: `フロントエンド最新ニュース ${formatDate(deps.today)}`,
       body: content,
-      tags: ["frontend", "news"],
+      tags: deps.tags ?? ["frontend", "news"],
     });
   } catch (error) {
     await reportError(deps, {
