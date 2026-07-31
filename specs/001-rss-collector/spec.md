@@ -70,7 +70,7 @@ v0.1 の最小構成として「RSS 1本以上 → articles/ 保存 → Qiita限
 
 ## スコープ外(今回やらないこと)
 
-- GitHubReleasesCollector(→ 002)
+- GitHubReleasesCollector(→ 別途spec化。002は「GitHub Actionsでの定期実行」に採番済みのため番号は未定)
 - TOPICS.md によるフィルタリング(→ 003)
 - LLM要約
 - git commit & push(state.json / articles/ / logs/ のコミットバック)。GitHub Actions workflow

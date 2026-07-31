@@ -1,16 +1,13 @@
 import type { NewsItem } from "../collectors/types.js";
-
-function formatDate(date: Date): string {
-  return date.toISOString().slice(0, 10);
-}
+import { formatJstDate } from "../core/jstDate.js";
 
 function renderItemLine(item: NewsItem): string {
-  return `- [${item.title}](${item.url}) — ${formatDate(item.publishedAt)}`;
+  return `- [${item.title}](${item.url}) — ${formatJstDate(item.publishedAt)}`;
 }
 
 export function renderArticles(items: NewsItem[], date: Date): string {
   const lines = items.map(renderItemLine);
-  return `# ${formatDate(date)} フロントエンド最新ニュース\n\n${lines.join("\n")}\n`;
+  return `# ${formatJstDate(date)} フロントエンド最新ニュース\n\n${lines.join("\n")}\n`;
 }
 
 export function appendArticles(existingContent: string, items: NewsItem[]): string {

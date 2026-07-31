@@ -1,4 +1,5 @@
 import type { Collector, NewsItem } from "./collectors/types.js";
+import { formatJstDate } from "./core/jstDate.js";
 import { normalizeUrl } from "./core/normalizeUrl.js";
 import type { ErrorLogEntry } from "./core/errorLog.js";
 import type { StateFile } from "./core/state.js";
@@ -30,10 +31,6 @@ function describeError(error: unknown): string {
 async function reportError(deps: DigestDeps, entry: ErrorLogEntry): Promise<void> {
   console.error(`[${entry.phase}] ${entry.errorType}: ${entry.message}`);
   await deps.logError(entry);
-}
-
-function formatDate(date: Date): string {
-  return date.toISOString().slice(0, 10);
 }
 
 async function collectItems(deps: DigestDeps): Promise<NewsItem[]> {
@@ -118,7 +115,7 @@ export async function runDigest(deps: DigestDeps): Promise<DigestResult> {
 
   try {
     await deps.postToQiita({
-      title: `フロントエンド最新ニュース ${formatDate(deps.today)}`,
+      title: `フロントエンド最新ニュース ${formatJstDate(deps.today)}`,
       body: content,
       tags: deps.tags ?? ["frontend", "news"],
     });

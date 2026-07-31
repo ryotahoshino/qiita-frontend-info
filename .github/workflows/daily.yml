@@ -9,6 +9,9 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write        # state.json / articles/ のコミットバック用
+    env:
+      TZ: Asia/Tokyo          # 日付計算自体はコード側(src/core/jstDate.ts)でJST固定だが、
+                              # ログ表示等をJSTに揃えるため念のため設定
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -19,6 +22,8 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Prepare config.yaml
+        run: cp config.yaml.example config.yaml
       - run: pnpm run digest
         env:
           QIITA_TOKEN: ${{ secrets.QIITA_TOKEN }}
@@ -27,5 +32,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add state.json articles/ logs/
-          git diff --cached --quiet || git commit -m "chore: daily digest $(date -u +%F)"
+          git diff --cached --quiet || git commit -m "chore: daily digest $(date +%F)"
           git push
