@@ -1,6 +1,6 @@
 # 001: RssCollector と v0.1 一気通貫パイプライン
 
-- status: approved
+- status: done
 
 ## 目的(なぜ作るか)
 

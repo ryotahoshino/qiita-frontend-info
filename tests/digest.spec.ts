@@ -1,8 +1,9 @@
 // specs/001-rss-collector/spec.md の受け入れ条件(AC1〜AC13)を vitest に落としたもの。
-// src/core/digest.ts (runDigest) は未実装のため、現時点では全テストが失敗する。
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Collector, NewsItem } from "../src/collectors/types.js";
-import { runDigest, type DigestDeps, type StateFile } from "../src/core/digest.js";
+import type { StateFile } from "../src/core/state.js";
+import { runDigest, type DigestDeps } from "../src/digest.js";
+import { appendArticles, renderArticles } from "../src/render/renderDigest.js";
 
 function makeItem(overrides: Partial<NewsItem> = {}): NewsItem {
   return {
@@ -30,6 +31,8 @@ function makeDeps(overrides: Partial<DigestDeps> = {}): DigestDeps {
     saveState: vi.fn(async () => {}),
     readArticleFile: vi.fn(async (): Promise<string | null> => null),
     writeArticleFile: vi.fn(async () => {}),
+    renderArticles: vi.fn(renderArticles),
+    appendArticles: vi.fn(appendArticles),
     postToQiita: vi.fn(async () => {}),
     logError: vi.fn(async () => {}),
     ...overrides,
@@ -313,5 +316,23 @@ describe("runDigest — specs/001-rss-collector/spec.md 受け入れ条件", () 
     expect(qiitaPayload.body).toContain(item.title);
     expect(qiitaPayload.body).toContain(item.url);
     expect(qiitaPayload.body).toContain(datePart);
+  });
+
+  // コードレビュー起因の回帰テスト(AC1〜13には含まれない):
+  // <link>欠落などでURLが不正な記事が1件混ざっていても、正常な記事の処理は継続し、
+  // digest全体を異常終了させない。
+  it("不正なURLの記事が1件あっても、他の正常な記事の処理を継続する", async () => {
+    const badItem = makeItem({ title: "Broken Link", url: "" });
+    const goodItem = makeItem({ title: "Good Article", url: "https://example.com/good" });
+    const deps = makeDeps({ collectors: [makeCollector("feed1", [badItem, goodItem])] });
+
+    const result = await runDigest(deps);
+
+    expect(result.exitCode).toBe(0);
+    expect(deps.logError).toHaveBeenCalled();
+    expect(console.error).toHaveBeenCalled();
+    const [content] = vi.mocked(deps.writeArticleFile).mock.calls[0]!;
+    expect(content).toContain("Good Article");
+    expect(content).not.toContain("Broken Link");
   });
 });
