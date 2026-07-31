@@ -1,10 +1,11 @@
-import { buildArticlePath, readArticleFile, writeArticleFile } from "./core/articleFile.js";
-import { runDigest } from "./core/digest.js";
+import { runDigest } from "./digest.js";
 import { appendErrorLog, buildErrorLogPath } from "./core/errorLog.js";
 import { loadState, saveState } from "./core/state.js";
 import { loadConfig } from "./config.js";
 import { createRssCollector } from "./collectors/rssCollector.js";
+import { buildArticlePath, readArticleFile, writeArticleFile } from "./publish/filePublisher.js";
 import { createQiitaPostFn } from "./publish/qiitaClient.js";
+import { appendArticles, renderArticles } from "./render/renderDigest.js";
 
 async function main(): Promise<void> {
   const config = await loadConfig("config.yaml").catch((error: NodeJS.ErrnoException) => {
@@ -29,6 +30,8 @@ async function main(): Promise<void> {
     saveState: (state) => saveState(statePath, state),
     readArticleFile: () => readArticleFile(articlePath),
     writeArticleFile: (content) => writeArticleFile(articlePath, content),
+    renderArticles,
+    appendArticles,
     postToQiita: createQiitaPostFn({ token: qiitaToken ?? "", private: config.qiita.private }),
     logError: (entry) => appendErrorLog(errorLogPath, entry),
   });

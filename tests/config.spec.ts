@@ -40,4 +40,10 @@ llm:
 
     expect(config.feeds).toEqual([]);
   });
+
+  it("feedsの要素にurlが無い場合はエラーを投げる", () => {
+    const yaml = "feeds:\n  - name: NoUrlFeed\n";
+
+    expect(() => parseConfig(yaml)).toThrow();
+  });
 });

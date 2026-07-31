@@ -2,7 +2,7 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { buildArticlePath, readArticleFile, writeArticleFile } from "../../src/core/articleFile.js";
+import { buildArticlePath, readArticleFile, writeArticleFile } from "../../src/publish/filePublisher.js";
 
 describe("buildArticlePath", () => {
   it("YYYY/MM/YYYY-MM-DD.md 形式のパスを組み立てる", () => {

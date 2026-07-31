@@ -1,6 +1,12 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
-import type { ErrorLogEntry } from "./digest.js";
+
+export interface ErrorLogEntry {
+  phase: "collect" | "publish";
+  errorType: string;
+  message: string;
+  source?: string;
+}
 
 function formatDate(date: Date): string {
   return date.toISOString().slice(0, 10);

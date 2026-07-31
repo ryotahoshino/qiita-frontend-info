@@ -27,13 +27,23 @@ export interface Config {
   llm: LlmConfig;
 }
 
+function validateFeeds(feeds: FeedConfig[]): void {
+  for (const feed of feeds) {
+    if (!feed || typeof feed.url !== "string" || feed.url.length === 0) {
+      throw new Error(`config.yaml の feeds に url が設定されていない項目があります: ${JSON.stringify(feed)}`);
+    }
+  }
+}
+
 export function parseConfig(yamlText: string): Config {
   const raw = (parse(yamlText) ?? {}) as Record<string, unknown>;
   const qiita = (raw.qiita ?? {}) as Partial<QiitaConfig>;
   const llm = (raw.llm ?? {}) as Partial<LlmConfig>;
+  const feeds = (raw.feeds as FeedConfig[] | undefined) ?? [];
+  validateFeeds(feeds);
 
   return {
-    feeds: (raw.feeds as FeedConfig[] | undefined) ?? [],
+    feeds,
     github_releases: (raw.github_releases as GithubReleaseConfig[] | undefined) ?? [],
     qiita: {
       // private のデフォルトは true 固定。false にするのは config.yaml 側の明示的な設定のみ。

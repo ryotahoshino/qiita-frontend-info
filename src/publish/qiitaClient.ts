@@ -1,4 +1,8 @@
-import type { QiitaPostPayload } from "../core/digest.js";
+export interface QiitaPostPayload {
+  title: string;
+  body: string;
+  tags: string[];
+}
 
 export interface QiitaClientConfig {
   token: string;

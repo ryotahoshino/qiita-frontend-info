@@ -1,5 +1,8 @@
 import { readFile, writeFile } from "node:fs/promises";
-import type { StateFile } from "./digest.js";
+
+export interface StateFile {
+  seenUrls: string[];
+}
 
 export async function loadState(filePath: string): Promise<StateFile | null> {
   try {
