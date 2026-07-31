@@ -78,7 +78,12 @@ GitHub Actions上で毎日自動実行し、`state.json` と `articles/` がコ�
 - 複数ジョブの同時実行を防ぐ `concurrency` 制御
 - ワークフロー失敗時のSlack/メール等の通知連携
 - `config.yaml.example` 以外の実運用フィード構成(GitHub Repository Variables経由の設定切り替えなど)
-- GithubReleasesCollector(→ 002ではなく既存どおり別spec)、TOPICS.mdフィルタ(→ 003)
+- GithubReleasesCollector(spec 001では「→002」としていたが、002は本spec(定期実行)に採番したため誤り。
+  今後、別番号のspecで対応する)
+- TOPICS.mdフィルタ(→ 003、変更なし)
+- PR時に `pnpm test` を自動実行するCI(例: `.github/workflows/ci.yml`)の追加。現状PRトリガーのテスト実行が
+  無いため、本specの `[vitest]` AC(`config.yaml.example`の妥当性チェック)は、マージ前に人が手動で
+  `pnpm test` を実行しない限り安全網として機能しない。これは既知のギャップとして残す
 - **QIITA_TOKEN を GitHub Secretsへ実際に登録する操作そのもの**(GitHub UI上でリポジトリ所有者が行う
   一度きりの手動作業であり、コードやワークフローとして実装できるものではないため)。
   本specの要件に含めるのは、その**手順をREADME.mdに文書化すること**までであり、登録作業自体はスコープ外
