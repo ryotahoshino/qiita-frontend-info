@@ -1,5 +1,6 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
+import { formatJstDate } from "./jstDate.js";
 
 export interface ErrorLogEntry {
   phase: "collect" | "publish";
@@ -8,12 +9,8 @@ export interface ErrorLogEntry {
   source?: string;
 }
 
-function formatDate(date: Date): string {
-  return date.toISOString().slice(0, 10);
-}
-
 export function buildErrorLogPath(date: Date, baseDir: string): string {
-  return join(baseDir, `${formatDate(date)}.json`);
+  return join(baseDir, `${formatJstDate(date)}.json`);
 }
 
 async function readEntries(filePath: string): Promise<unknown[]> {
