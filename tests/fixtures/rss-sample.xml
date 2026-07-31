@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>JSer.info (sample)</title>
+    <link>https://jser.info/</link>
+    <description>JavaScript関連の情報をまとめたフィード(テスト用の縮小サンプル)</description>
+    <item>
+      <title>Sample Article One</title>
+      <link>https://jser.info/2026/07/10/sample-one/</link>
+      <pubDate>Fri, 10 Jul 2026 09:00:00 +0900</pubDate>
+      <description>Summary of article one.</description>
+    </item>
+    <item>
+      <title>Sample Article Two</title>
+      <link>https://jser.info/2026/07/09/sample-two/</link>
+      <pubDate>Thu, 09 Jul 2026 09:00:00 +0900</pubDate>
+      <description>Summary of article two.</description>
+    </item>
+  </channel>
+</rss>
