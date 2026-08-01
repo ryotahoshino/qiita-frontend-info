@@ -1,6 +1,6 @@
 # 003: TOPICS.mdによるフィルタリング(キーワードマッチ)
 
-- status: draft(← Claude Codeと壁打ちして固め、承認したら approved に変更)
+- status: approved
 
 ## 目的(なぜ作るか)
 
