@@ -1,5 +1,8 @@
+import { readFile } from "node:fs/promises";
 import { runDigest } from "./digest.js";
 import { appendErrorLog, buildErrorLogPath } from "./core/errorLog.js";
+import { appendSkippedLog, buildSkippedLogPath } from "./core/skippedLog.js";
+import { parseTopics } from "./core/topicMatcher.js";
 import { loadState, saveState } from "./core/state.js";
 import { loadConfig } from "./config.js";
 import { createRssCollector } from "./collectors/rssCollector.js";
@@ -14,11 +17,14 @@ async function main(): Promise<void> {
     }
     throw error;
   });
+  const topicsMarkdown = await readFile("TOPICS.md", "utf-8");
+  const topics = parseTopics(topicsMarkdown);
 
   const today = new Date();
   const statePath = "state.json";
   const articlePath = buildArticlePath(today, "articles");
   const errorLogPath = buildErrorLogPath(today, "logs/errors");
+  const skippedLogPath = buildSkippedLogPath(today, "logs/skipped");
   const qiitaToken = process.env.QIITA_TOKEN;
 
   const result = await runDigest({
@@ -26,6 +32,7 @@ async function main(): Promise<void> {
     today,
     qiitaToken,
     tags: config.qiita.tags,
+    topics,
     loadState: () => loadState(statePath),
     saveState: (state) => saveState(statePath, state),
     readArticleFile: () => readArticleFile(articlePath),
@@ -34,6 +41,7 @@ async function main(): Promise<void> {
     appendArticles,
     postToQiita: createQiitaPostFn({ token: qiitaToken ?? "", private: config.qiita.private }),
     logError: (entry) => appendErrorLog(errorLogPath, entry),
+    logSkipped: (entry) => appendSkippedLog(skippedLogPath, entry),
   });
 
   process.exitCode = result.exitCode;

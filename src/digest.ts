@@ -1,7 +1,9 @@
 import type { Collector, NewsItem } from "./collectors/types.js";
 import { formatJstDate } from "./core/jstDate.js";
 import { normalizeUrl } from "./core/normalizeUrl.js";
+import { classify, type Topic, type TopicSection } from "./core/topicMatcher.js";
 import type { ErrorLogEntry } from "./core/errorLog.js";
+import type { SkippedLogEntry } from "./core/skippedLog.js";
 import type { StateFile } from "./core/state.js";
 import type { QiitaPostPayload } from "./publish/qiitaClient.js";
 
@@ -10,14 +12,16 @@ export interface DigestDeps {
   today: Date;
   qiitaToken: string | undefined;
   tags?: string[];
+  topics: Topic[];
   loadState(): Promise<StateFile | null>;
   saveState(state: StateFile): Promise<void>;
   readArticleFile(): Promise<string | null>;
   writeArticleFile(content: string): Promise<void>;
-  renderArticles(items: NewsItem[], today: Date): string;
-  appendArticles(existingContent: string, items: NewsItem[]): string;
+  renderArticles(sections: TopicSection[], today: Date): string;
+  appendArticles(existingContent: string, sections: TopicSection[]): string;
   postToQiita(payload: QiitaPostPayload): Promise<void>;
   logError(entry: ErrorLogEntry): Promise<void>;
+  logSkipped(entry: SkippedLogEntry): Promise<void>;
 }
 
 export interface DigestResult {
@@ -82,6 +86,43 @@ async function selectNewItems(
   return { items: newItems, normalizedUrls };
 }
 
+// TOPICS.mdのkeywordsに一致しない記事はskipし、一致した記事はtopics宣言順にグループ化する。
+async function classifyItems(
+  deps: DigestDeps,
+  items: NewsItem[],
+): Promise<{ sections: TopicSection[]; skippedCount: number }> {
+  const itemsByTopic = new Map<string, NewsItem[]>();
+  let skippedCount = 0;
+
+  for (const item of items) {
+    const { topic, relevance } = classify(item, deps.topics);
+    if (relevance === "skip") {
+      skippedCount += 1;
+      await deps.logSkipped({
+        title: item.title,
+        url: item.url,
+        source: item.source,
+        publishedAt: item.publishedAt.toISOString(),
+      });
+      continue;
+    }
+
+    const bucket = itemsByTopic.get(topic) ?? [];
+    bucket.push(item);
+    itemsByTopic.set(topic, bucket);
+  }
+
+  const sections: TopicSection[] = [];
+  for (const topic of deps.topics) {
+    const bucket = itemsByTopic.get(topic.name);
+    if (bucket && bucket.length > 0) {
+      sections.push({ topic: topic.name, items: bucket });
+    }
+  }
+
+  return { sections, skippedCount };
+}
+
 export async function runDigest(deps: DigestDeps): Promise<DigestResult> {
   const items = await collectItems(deps);
 
@@ -93,15 +134,22 @@ export async function runDigest(deps: DigestDeps): Promise<DigestResult> {
     return { exitCode: 0 };
   }
 
+  const { sections } = await classifyItems(deps, newItems);
+
+  const mergedSeenUrls = Array.from(new Set([...state.seenUrls, ...normalizedUrls]));
+
+  if (sections.length === 0) {
+    await deps.saveState({ seenUrls: mergedSeenUrls });
+    return { exitCode: 0 };
+  }
+
   const existingContent = await deps.readArticleFile();
   const isRerun = existingContent !== null;
   const content = isRerun
-    ? deps.appendArticles(existingContent, newItems)
-    : deps.renderArticles(newItems, deps.today);
+    ? deps.appendArticles(existingContent, sections)
+    : deps.renderArticles(sections, deps.today);
 
   await deps.writeArticleFile(content);
-
-  const mergedSeenUrls = Array.from(new Set([...state.seenUrls, ...normalizedUrls]));
   await deps.saveState({ seenUrls: mergedSeenUrls });
 
   if (isRerun) {
