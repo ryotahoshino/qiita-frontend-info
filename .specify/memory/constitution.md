@@ -73,13 +73,11 @@ Collector追加時はフィクスチャ(実レスポンスの縮小版)を `test
 |---|---|---|---|
 | 001-rss-collector | RSS収集 → articles/保存 → Qiita限定共有投稿の一気通貫パイプライン | done | 完了・main統合済み |
 | 002-scheduled-run | GitHub Actions定期実行、config.yaml自動生成、JST日付対応、README Setup節 | done | 完了・main統合済み |
-| 003-topics-filter | TOPICS.mdによるキーワードマッチフィルタリング、Rendererのトピック別セクション化 | approved | 受け入れ条件12件をテストケース化済み(`tests/core/topicMatcher.spec.ts`、`tests/topicsFilter.spec.ts`)。実装は未着手(意図的にred状態) |
+| 003-topics-filter | TOPICS.mdによるキーワードマッチフィルタリング、Rendererのトピック別セクション化 | approved | 実装完了(`src/core/topicMatcher.ts`、`src/core/skippedLog.ts`、`src/digest.ts`、`src/render/renderDigest.ts`、`src/main.ts`)。`pnpm test` 51件・`tsc --noEmit` ともにpass。`feat/003-topics-filter` ブランチ、main未統合(PR前) |
 
 今後の方針(`docs/DESIGN.md` ロードマップ準拠、番号は仮):
 
-1. **003実装**: `src/core/topicMatcher.ts`(parseTopics/classify)、`src/core/skippedLog.ts`、
-   `src/digest.ts`(分類ステップ追加)、`src/render/renderDigest.ts`(トピック別グループ化)を
-   実装し、`tests/core/topicMatcher.spec.ts` と `tests/topicsFilter.spec.ts` をgreenにする
+1. **003をmainへ統合**: `feat/003-topics-filter` のPRを作成・マージする
 2. **LLMありモード**(別spec、004以降): `TOPICS.md` 全文をプロンプトに注入し `note` の
    ニュアンスも判定。`llm.enabled: true` 時のみ有効
 3. **GitHubReleasesCollector**(別spec、番号未定): `src/collectors/` にプラグイン追加
