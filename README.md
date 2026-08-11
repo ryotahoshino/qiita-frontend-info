@@ -30,6 +30,17 @@
    `config.yaml` として使われるため、実運用のフィード構成を変えたい場合は
    `config.yaml.example` 自体を編集してコミットする。
 
+4. **(オプション)LLMありモード用のAnthropic APIキーを設定する**
+   `config.yaml` の `llm.enabled: true` にした場合のみ必要(デフォルトは`false`でキーワード
+   マッチのみで動作する)。
+   - ローカル: `.env.example` を `.env.local`(`.gitignore`対象)にコピーし、
+     `ANTHROPIC_API_KEY=` の値を設定したうえで、実行前にシェルの環境変数として読み込む
+     (例: PowerShellなら `$env:ANTHROPIC_API_KEY = "..."`)。このプロジェクトは `.env.local` を
+     自動読み込みしないため、シェルへのエクスポートが必要
+   - GitHub Actions: このリポジトリの `Settings > Secrets and variables > Actions` から
+     Name: `ANTHROPIC_API_KEY`、Value: 発行したAPIキー、で登録する
+   - APIキーはコード・config・テストに直書きしないこと(`.env.local` / GitHub Secrets経由でのみ渡す)
+
 ## Configuration
 
 `config.yaml.example` をコピーして `config.yaml` を作成する。

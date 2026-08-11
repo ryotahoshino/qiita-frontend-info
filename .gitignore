@@ -1,6 +1,8 @@
 node_modules/
 dist/
 config.yaml
-.env
+.env*
+!.env.example
 *.log
+*.local.sh
 .claude/settings.local.json
