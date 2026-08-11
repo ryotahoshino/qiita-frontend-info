@@ -133,6 +133,9 @@ CLAUDE.mdの原則「LLM要約・LLM分類はオプトイン。APIキーなし�
 - Anthropic以外のLLMプロバイダ対応
 - LLM呼び出しのリトライ・高度なレート制御・コスト管理
 - v0.3: `logs/skipped/` のLLM分析による `TOPICS.md` 自動追記PR化(別spec)
+- `.github/workflows/daily.yml` の変更。LLMモードをGitHub Actions上で有効化する際は
+  `ANTHROPIC_API_KEY` をdigestステップの環境変数として渡すよう `daily.yml` の更新が必要だが、
+  本specでは対応しない(別spec)
 
 ## 関連
 
