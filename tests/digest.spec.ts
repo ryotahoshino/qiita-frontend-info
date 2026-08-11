@@ -2,8 +2,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Collector, NewsItem } from "../src/collectors/types.js";
 import type { StateFile } from "../src/core/state.js";
+import type { Topic } from "../src/core/topicMatcher.js";
 import { runDigest, type DigestDeps } from "../src/digest.js";
 import { appendArticles, renderArticles } from "../src/render/renderDigest.js";
+
+// spec 001時点のテストはトピック分類を前提としないため、全記事にマッチするキャッチオール
+// トピックを既定値にする(空文字列はどんな文字列にもJavaScriptのString#includesで一致する)。
+const CATCH_ALL_TOPIC: Topic = { name: "全般", priority: "high", keywords: [""] };
 
 function makeItem(overrides: Partial<NewsItem> = {}): NewsItem {
   return {
@@ -27,6 +32,7 @@ function makeDeps(overrides: Partial<DigestDeps> = {}): DigestDeps {
     collectors: [],
     today: new Date("2026-07-15T00:00:00Z"),
     qiitaToken: "dummy-token",
+    topics: [CATCH_ALL_TOPIC],
     loadState: vi.fn(async (): Promise<StateFile | null> => ({ seenUrls: [] })),
     saveState: vi.fn(async () => {}),
     readArticleFile: vi.fn(async (): Promise<string | null> => null),
@@ -35,6 +41,7 @@ function makeDeps(overrides: Partial<DigestDeps> = {}): DigestDeps {
     appendArticles: vi.fn(appendArticles),
     postToQiita: vi.fn(async () => {}),
     logError: vi.fn(async () => {}),
+    logSkipped: vi.fn(async () => {}),
     ...overrides,
   };
 }
