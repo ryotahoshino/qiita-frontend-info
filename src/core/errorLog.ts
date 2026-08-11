@@ -2,6 +2,9 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { formatJstDate } from "./jstDate.js";
 
+// errorType の規約: "collector_fetch_failed" | "invalid_item_url" | "qiita_post_failed" |
+// "llm_classification_failed"(spec 004。AnthropicClassifierがKeywordClassifierへ
+// フォールバックした際に phase: "collect" で記録し、フォールバック発生をログから判別できるようにする)
 export interface ErrorLogEntry {
   phase: "collect" | "publish";
   errorType: string;

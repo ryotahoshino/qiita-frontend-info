@@ -42,15 +42,15 @@ Setupタスクは無し。
 **Purpose**: `AnthropicClassifier`/`digest.ts統合`の両方が依存する土台。このフェーズ完了まで
 Phase 3以降は着手できない。
 
-- [ ] T001 [P] `tests/core/classifier.spec.ts` に `createKeywordClassifier()` の契約テストを書く
+- [X] T001 [P] `tests/core/classifier.spec.ts` に `createKeywordClassifier()` の契約テストを書く
       (既存の `classify()` と同じ結果を返すことを確認。`Classifier`/`createKeywordClassifier`は
       未実装のため、この時点でテストは失敗する) — contracts/classifier-interface.md 準拠
-- [ ] T002 `src/core/classifier.ts` に `Classifier` インターフェースを定義する
+- [X] T002 `src/core/classifier.ts` に `Classifier` インターフェースを定義する
       (data-model.md「Classifier」参照)
-- [ ] T003 `src/core/topicMatcher.ts` に `createKeywordClassifier(): Classifier` を追加する
+- [X] T003 `src/core/topicMatcher.ts` に `createKeywordClassifier(): Classifier` を追加する
       (既存の `classify(item, topics)` を `items.map()` でラップし、`topicsMarkdown` 引数は
       無視する)
-- [ ] T004 `src/core/index.ts` バレルに `classifier.js` のexportを追加する
+- [X] T004 `src/core/index.ts` バレルに `classifier.js` のexportを追加する
 
 **Checkpoint**: T001のテストがgreenになる。`Classifier` インターフェースと既定実装
 (`KeywordClassifier`)が揃い、Phase 3・Phase 4が着手可能になる。
@@ -68,30 +68,30 @@ Phase 3以降は着手できない。
 
 ### Tests for ANTHROPIC ⚠️ 実装より先に書き、失敗を確認する
 
-- [ ] T005 [P] [ANTHROPIC] `tests/core/anthropicClassifier.spec.ts`: 正常系
+- [X] T005 [P] [ANTHROPIC] `tests/core/anthropicClassifier.spec.ts`: 正常系
       — モックfetchが妥当なtool_use応答を返すとき、送信されたリクエストの `system` に
       指示文のみ、`messages[0].content` に `<article>` タグで区切られた記事データが含まれる
       ことを検証(spec.md AC「プロンプトの分離」)
-- [ ] T006 [P] [ANTHROPIC] 同ファイル: モックfetchがHTTPエラー/ネットワークエラーを返すとき、
+- [X] T006 [P] [ANTHROPIC] 同ファイル: モックfetchがHTTPエラー/ネットワークエラーを返すとき、
       `fallback.classify()` の結果が返り、`logError` が `errorType: "llm_classification_failed"`
       で1回呼ばれることを検証
-- [ ] T007 [P] [ANTHROPIC] 同ファイル: モックfetchの応答がJSONとしてパースできないとき、
+- [X] T007 [P] [ANTHROPIC] 同ファイル: モックfetchの応答がJSONとしてパースできないとき、
       T006と同様にフォールバック・ログを検証
-- [ ] T008 [P] [ANTHROPIC] 同ファイル: モックfetchの応答はJSONとして妥当だがスキーマ不一致
+- [X] T008 [P] [ANTHROPIC] 同ファイル: モックfetchの応答はJSONとして妥当だがスキーマ不一致
       (`topic`/`relevance` 欠落等)のとき、T006と同様にフォールバック・ログを検証
-- [ ] T009 [P] [ANTHROPIC] 同ファイル: モックfetchの応答はスキーマとして妥当だが `topics` に
+- [X] T009 [P] [ANTHROPIC] 同ファイル: モックfetchの応答はスキーマとして妥当だが `topics` に
       存在しない `topic` を含む記事が1件あるとき、フォールバックは発生せず当該記事のみ
       `relevance: "skip"` になり、他の記事は分類結果がそのまま使われることを検証
 
 ### Implementation for ANTHROPIC
 
-- [ ] T010 [ANTHROPIC] `src/core/errorLog.ts` の `ErrorLogEntry` にコメントで
+- [X] T010 [ANTHROPIC] `src/core/errorLog.ts` の `ErrorLogEntry` にコメントで
       `errorType: "llm_classification_failed"` の規約を明記する(data-model.md「ErrorLogEntry」)
-- [ ] T011 [ANTHROPIC] `src/core/anthropicClassifier.ts` に
+- [X] T011 [ANTHROPIC] `src/core/anthropicClassifier.ts` に
       `createAnthropicClassifier(options: AnthropicClassifierOptions): Classifier` を実装する
       (contracts/anthropic-classify-contract.md のリクエスト/レスポンス形状・処理フローに従う。
       T005〜T009 が green になることを確認する)
-- [ ] T012 [ANTHROPIC] `src/core/index.ts` バレルに `anthropicClassifier.js` のexportを追加する
+- [X] T012 [ANTHROPIC] `src/core/index.ts` バレルに `anthropicClassifier.js` のexportを追加する
 
 **Checkpoint**: `tests/core/anthropicClassifier.spec.ts` の全ケースがgreen。
 `AnthropicClassifier` は `digest.ts` の変更を待たずに単体で完結して動作確認できる。
@@ -111,19 +111,19 @@ Phase 3以降は着手できない。
 
 ### Tests for DIGEST ⚠️ 実装より先に書き、失敗を確認する
 
-- [ ] T013 [P] [DIGEST] `tests/digestClassifierInjection.spec.ts` を新規作成し、モックの
+- [X] T013 [P] [DIGEST] `tests/digestClassifierInjection.spec.ts` を新規作成し、モックの
       `Classifier`(任意の分類結果を返す)を `DigestDeps.classifier` に注入して `digest` を
       実行し、`articles/` 生成・`state.json` 記録・`logs/skipped/` 記録が注入された分類結果を
       そのまま使うことを検証する(spec.md AC「Classifierインターフェース・digest.ts側」)
 
 ### Implementation for DIGEST
 
-- [ ] T014 [DIGEST] `src/digest.ts` の `DigestDeps` に `classifier: Classifier` と
+- [X] T014 [DIGEST] `src/digest.ts` の `DigestDeps` に `classifier: Classifier` と
       `topicsMarkdown: string` を追加し、`classifyItems` を
       `deps.classifier.classify(items, deps.topics, deps.topicsMarkdown)` によるバッチ呼び出しに
       変更する(1件ずつ `classify()` を直接importして呼んでいた既存実装を置き換える。
       data-model.md「DigestDeps」参照)
-- [ ] T015 [DIGEST] `tests/digest.spec.ts` と `tests/topicsFilter.spec.ts` の `makeDeps` に
+- [X] T015 [DIGEST] `tests/digest.spec.ts` と `tests/topicsFilter.spec.ts` の `makeDeps` に
       `classifier`(キャッチオールトピックと同等の挙動をするモック `Classifier`)と
       `topicsMarkdown`(空文字列でよい)を追加する。**既存テスト本体(`it()`の中身)は変更しない**
       (spec 002/003のリファクタ時と同じ方針。既存33件超のテストの意図を保つ)
@@ -140,7 +140,7 @@ Phase 3以降は着手できない。
 
 **Depends on**: Phase 3・Phase 4の完了。
 
-- [ ] T016 [MAIN] `src/main.ts` で `TOPICS.md` の生テキスト(`topicsMarkdown`)を保持したまま
+- [X] T016 [MAIN] `src/main.ts` で `TOPICS.md` の生テキスト(`topicsMarkdown`)を保持したまま
       `DigestDeps` に渡し、`config.qiita.llm.enabled` かつ `process.env.ANTHROPIC_API_KEY` が
       設定されている場合のみ `createAnthropicClassifier({ apiKey, fallback: createKeywordClassifier(), logError })`
       を、それ以外は `createKeywordClassifier()` を `classifier` として注入する
@@ -154,11 +154,11 @@ Phase 3以降は着手できない。
 
 **Purpose**: 全体の整合性確認とドキュメント更新
 
-- [ ] T017 [P] `pnpm test` を実行し全件green、`tsc --noEmit` をエラーゼロにする
+- [X] T017 [P] `pnpm test` を実行し全件green、`tsc --noEmit` をエラーゼロにする
       (ループで修正する。前提: T001〜T016完了)
 - [ ] T018 [P] `specs/004-llm-classification/quickstart.md` の手動検証(実際の
       `ANTHROPIC_API_KEY` での疎通確認、spec.mdの `[手動]` AC)を実施する
-- [ ] T019 `.specify/memory/constitution.md` の「現在の進捗と今後の実装方針」表を
+- [X] T019 `.specify/memory/constitution.md` の「現在の進捗と今後の実装方針」表を
       spec 004実装完了に更新する
 - [ ] T020 変更をコミットする(CLAUDE.md/Constitution の「作業単位ごとにコミット」規約に従う)
 

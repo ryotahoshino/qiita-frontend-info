@@ -1,7 +1,8 @@
 import type { Collector, NewsItem } from "./collectors/types.js";
 import { formatJstDate } from "./core/jstDate.js";
 import { normalizeUrl } from "./core/normalizeUrl.js";
-import { classify, type Topic, type TopicSection } from "./core/topicMatcher.js";
+import type { Classifier } from "./core/classifier.js";
+import type { Topic, TopicSection } from "./core/topicMatcher.js";
 import type { ErrorLogEntry } from "./core/errorLog.js";
 import type { SkippedLogEntry } from "./core/skippedLog.js";
 import type { StateFile } from "./core/state.js";
@@ -13,6 +14,8 @@ export interface DigestDeps {
   qiitaToken: string | undefined;
   tags?: string[];
   topics: Topic[];
+  topicsMarkdown: string;
+  classifier: Classifier;
   loadState(): Promise<StateFile | null>;
   saveState(state: StateFile): Promise<void>;
   readArticleFile(): Promise<string | null>;
@@ -86,16 +89,19 @@ async function selectNewItems(
   return { items: newItems, normalizedUrls };
 }
 
-// TOPICS.mdのkeywordsに一致しない記事はskipし、一致した記事はtopics宣言順にグループ化する。
+// deps.classifier(キーワードマッチ or LLM)でバッチ分類する。skipされた記事はlogSkippedに
+// 記録し、それ以外はtopics宣言順にグループ化する。
 async function classifyItems(
   deps: DigestDeps,
   items: NewsItem[],
 ): Promise<{ sections: TopicSection[]; skippedCount: number }> {
+  const classifications = await deps.classifier.classify(items, deps.topics, deps.topicsMarkdown);
   const itemsByTopic = new Map<string, NewsItem[]>();
   let skippedCount = 0;
 
-  for (const item of items) {
-    const { topic, relevance } = classify(item, deps.topics);
+  for (let i = 0; i < items.length; i += 1) {
+    const item = items[i]!;
+    const { topic, relevance } = classifications[i]!;
     if (relevance === "skip") {
       skippedCount += 1;
       await deps.logSkipped({

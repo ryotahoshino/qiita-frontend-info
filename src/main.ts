@@ -1,8 +1,9 @@
 import { readFile } from "node:fs/promises";
 import { runDigest } from "./digest.js";
+import { createAnthropicClassifier } from "./core/anthropicClassifier.js";
 import { appendErrorLog, buildErrorLogPath } from "./core/errorLog.js";
 import { appendSkippedLog, buildSkippedLogPath } from "./core/skippedLog.js";
-import { parseTopics } from "./core/topicMatcher.js";
+import { createKeywordClassifier, parseTopics } from "./core/topicMatcher.js";
 import { loadState, saveState } from "./core/state.js";
 import { loadConfig } from "./config.js";
 import { createRssCollector } from "./collectors/rssCollector.js";
@@ -26,6 +27,16 @@ async function main(): Promise<void> {
   const errorLogPath = buildErrorLogPath(today, "logs/errors");
   const skippedLogPath = buildSkippedLogPath(today, "logs/skipped");
   const qiitaToken = process.env.QIITA_TOKEN;
+  const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
+  const logError = (entry: Parameters<typeof appendErrorLog>[1]) => appendErrorLog(errorLogPath, entry);
+
+  // llm.enabled かつ ANTHROPIC_API_KEY が設定されている場合のみLLM分類を使う。
+  // いずれか欠けている場合はキーワードマッチのみで動作する(CLAUDE.md「LLMはオプトイン」原則)。
+  const keywordClassifier = createKeywordClassifier();
+  const classifier =
+    config.llm.enabled && anthropicApiKey
+      ? createAnthropicClassifier({ apiKey: anthropicApiKey, fallback: keywordClassifier, logError })
+      : keywordClassifier;
 
   const result = await runDigest({
     collectors: config.feeds.map((feed) => createRssCollector(feed)),
@@ -33,6 +44,8 @@ async function main(): Promise<void> {
     qiitaToken,
     tags: config.qiita.tags,
     topics,
+    topicsMarkdown,
+    classifier,
     loadState: () => loadState(statePath),
     saveState: (state) => saveState(statePath, state),
     readArticleFile: () => readArticleFile(articlePath),
@@ -40,7 +53,7 @@ async function main(): Promise<void> {
     renderArticles,
     appendArticles,
     postToQiita: createQiitaPostFn({ token: qiitaToken ?? "", private: config.qiita.private }),
-    logError: (entry) => appendErrorLog(errorLogPath, entry),
+    logError,
     logSkipped: (entry) => appendSkippedLog(skippedLogPath, entry),
   });
 
