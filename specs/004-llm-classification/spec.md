@@ -21,59 +21,106 @@ CLAUDE.mdの原則「LLM要約・LLM分類はオプトイン。APIキーなし�
 
 ## 要件(何ができればよいか)
 
-- LLM呼び出しを行うI/Oを `src/core/llmClassifier.ts` に分離し、
-  `classifyWithLlm(items: NewsItem[], topicsMarkdown: string, apiKey: string): Promise<Classification[]>`
-  を実装する(外部I/Oをこの関数に閉じ込め、コアロジックとは分離する)
-- プロンプトには `TOPICS.md` の全文(`## 除外条件` セクションを含む)をそのまま注入する
-- LLM APIは Anthropic Claude API を使用し、APIキーは環境変数 `ANTHROPIC_API_KEY` からのみ
-  取得する(コード・config・テストへの直書き禁止)
+- 分類器を **`Classifier` インターフェース**として定義する(`src/core/classifier.ts` 等)。
+  ```ts
+  interface Classifier {
+    name: string;
+    classify(items: NewsItem[], topics: Topic[], topicsMarkdown: string): Promise<Classification[]>;
+  }
+  ```
+  spec 003のキーワードマッチ(`classify` 関数)はこのインターフェースを実装する
+  `KeywordClassifier` としてラップする。Anthropic実装(`AnthropicClassifier`)も同じ
+  インターフェースを実装し、両者は `src/digest.ts` から見て区別されないプラグインとする
+  (CLAUDE.mdのCollector/Publisherと同様、インターフェースを実装するプラグインとして追加する
+  原則に倣う)
+- `src/digest.ts` の `DigestDeps` は分類関数を直接importせず、**`classifier: Classifier` を
+  注入される依存として受け取る**。どの実装(Keyword/Anthropic)が使われるかをdigest.ts側は
+  意識しない。これにより、digest.tsの受け入れ条件はモックの `Classifier` で検証でき、
+  Anthropicへの実際のAPI呼び出しを伴う検証と分離できる
+- Anthropic実装は `src/core/anthropicClassifier.ts`(仮)に外部I/Oを閉じ込め、
+  `createAnthropicClassifier(options: { apiKey: string; fallback: Classifier; logError: (entry) => Promise<void> }): Classifier`
+  の形で提供する。APIキーは環境変数 `ANTHROPIC_API_KEY` からのみ取得する(コード・config・
+  テストへの直書き禁止)
+- プロンプトには `TOPICS.md` の全文(`## 除外条件` セクションを含む)を注入するが、
+  **記事由来のテキスト(タイトル・summary、フィード提供元からの外部入力)は指示文と明確に分離し、
+  データとして扱う**(例: Anthropic Messages APIの `system` パラメータに指示文を置き、
+  記事データは `user` メッセージ内で明確なタグ/区切り文字で囲んで渡す)。フィード由来のテキストを
+  そのまま指示として解釈させない(プロンプトインジェクション対策)
 - `config.yaml` の `llm.enabled: true` かつ `ANTHROPIC_API_KEY` が設定されている場合のみ
-  LLMモードを使用する。いずれかが欠けている場合は既存のキーワードマッチにフォールバックする
-  (エラーにはしない)
-- LLM API呼び出しが失敗(タイムアウト・レート制限・不正レスポンス等)した場合、そのバッチは
-  キーワードマッチによる分類にフォールバックし、`logs/errors/YYYY-MM-DD.json` にエラーとして
-  記録する。digest全体の実行は止めない
-- `src/digest.ts` の分類ステップ(`classifyItems`)を、キーワード分類とLLM分類のどちらでも
-  差し替えられる形にする(`DigestDeps` に分類関数を注入するか、モード判定込みの関数を渡す)
-- LLMの応答は各記事ごとに `{ topic: string; relevance: "high" | "medium" | "skip" }` の形に
-  パースする。`topics` に存在しないトピック名をLLMが返した場合はskip扱いにする(不正な応答への
-  耐性)
+  `AnthropicClassifier`(内部に `KeywordClassifier` をfallbackとして持つ)を注入する。
+  いずれかが欠けている場合は `KeywordClassifier` を直接注入する(エラーにはしない)。
+  この選択は `main.ts`(配線層)の責務とする
+- `AnthropicClassifier` は以下のいずれかが発生した場合、そのバッチを `fallback`
+  (`KeywordClassifier`)による分類結果に切り替え、`logs/errors/YYYY-MM-DD.json` に
+  **`errorType: "llm_classification_failed"`** として記録する(通常のエラーと区別し、
+  フォールバックが発生したことがログから判別できるようにする。digest全体の実行は止めない):
+  - LLM API呼び出し自体の失敗(タイムアウト・レート制限・ネットワークエラー等)
+  - LLMの応答がJSONとしてパースできない
+  - LLMの応答が期待するスキーマ(`{ topic: string; relevance: "high" | "medium" | "skip" }[]`)
+    と一致しない
+- 上記のフォールバックとは別に、LLMの応答がスキーマとしては妥当だが `topic` が `topics` に
+  存在しない場合は、記事単位で `relevance: "skip"` として扱う(バッチ全体をfallbackさせない)
 
 ### 前提とした判断(壁打ちで要確認)
 
 - LLMプロバイダはAnthropic Claude APIを既定とした(他プロバイダ対応はスコープ外)
 - LLMモードは「キーワードマッチの結果に足す」のではなく「有効時はLLMが分類全体を担う」設計とした
-  (DESIGN.mdの「noteの自然言語ニュアンスも含めて関連度を判定」という記述に基づく)
+  (DESIGN.mdの「noteの自然言語ニュアンスも含めて関連度を判定」という記述に基づく)。
+  ただし `AnthropicClassifier` は内部に `KeywordClassifier` をfallbackとして保持する設計に
+  変更し、失敗時のみキーワードマッチへ切り替わる
 - LLM API失敗時はエラーを記録した上でキーワードマッチにフォールバックする設計とした
-  (spec 001/003の「1件の失敗で全体を止めない」原則を踏襲)
+  (spec 001/003の「1件の失敗で全体を止めない」原則を踏襲)。フォールバックの発生は
+  `errorType: "llm_classification_failed"` としてログから判別可能にする
 
 ## 受け入れ条件
 
-- `[vitest]` Given: `llm.enabled` が `false`(デフォルト) / When: `digest` を実行する
-  Then: LLM API呼び出しは一切発生せず、既存のキーワードマッチのみで分類される
+検証方法の方針: `AnthropicClassifier` は実際のAnthropic APIをモックして検証する
+(`[vitest]`)。実際のAPIキーを使った疎通確認のみ `[手動]` とする。`src/digest.ts` 側は
+モックの `Classifier` を注入して検証し、Keyword/Anthropicどちらの実装かを意識しない。
+
+### Classifierインターフェース・digest.ts側(実装非依存)
+
+- `[vitest]` Given: `DigestDeps` にモックの `Classifier`(任意の分類結果を返す)を注入する
+  / When: `digest` を実行する
+  Then: `digest.ts` は注入された `Classifier` の分類結果をそのまま使って `articles/` 生成・
+        `state.json` 記録・`logs/skipped/` 記録を行う(spec 003のパイプライン統合と同じ規約)。
+        `Classifier` の実装がKeywordかAnthropicかによって `digest.ts` の挙動は変わらない
+
+- `[vitest]` Given: `llm.enabled` が `false`(デフォルト)、または `ANTHROPIC_API_KEY` が未設定
+  / When: `main.ts` の配線ロジックで使用する `Classifier` を決定する
+  Then: `KeywordClassifier` が選ばれ、Anthropic向けの依存(APIキー等)は一切参照されない
         (spec 003 AC12と同じ不変条件の再確認)
 
-- `[vitest]` Given: `llm.enabled` が `true` だが `ANTHROPIC_API_KEY` が未設定
-  / When: `digest` を実行する
-  Then: エラーにはならず、キーワードマッチにフォールバックして分類が完了する
+### AnthropicClassifier(モックしたAnthropic呼び出しで検証)
 
-- `[vitest]` Given: `llm.enabled` が `true` かつ `ANTHROPIC_API_KEY` が設定済み
-  / When: `classifyWithLlm` を呼び出す
-  Then: LLMへ送るプロンプトに `TOPICS.md` の全文(`## 除外条件` セクションを含む)が
-        含まれている
+- `[vitest]` Given: モックしたAnthropic APIが妥当なJSON応答を返す / When: `classify` を呼ぶ
+  Then: 送信されるプロンプトの `system` には指示文のみが含まれ、記事のタイトル・summaryは
+        `user` メッセージ内で指示文とは明確に区切られたデータとして渡される(指示文と記事本文が
+        混在しない)
 
-- `[vitest]` Given: LLM API呼び出しがエラーを返す(タイムアウト・レート制限・不正レスポンス等)
-  / When: `digest` を実行する
-  Then: エラーが `logs/errors/YYYY-MM-DD.json` に記録され、キーワードマッチにフォールバックし、
-        exit code 0 で終了する
+- `[vitest]` Given: モックしたAnthropic APIがエラーを返す(タイムアウト・レート制限・
+  ネットワークエラー等) / When: `classify` を呼ぶ
+  Then: `fallback`(`KeywordClassifier`)による分類結果が返り、`logError` が
+        `errorType: "llm_classification_failed"` で1回呼ばれる
 
-- `[vitest]` Given: LLMが `topics` に存在しないトピック名を返す / When: 分類結果をパースする
-  Then: 当該記事は `skip` 扱いになる
+- `[vitest]` Given: モックしたAnthropic APIの応答がJSONとしてパースできない / When: `classify` を呼ぶ
+  Then: 同様に `fallback` の結果が返り、`errorType: "llm_classification_failed"` として記録される
 
-- `[vitest]` Given: LLMが記事ごとに妥当な `topic`/`relevance` を返す
-  / When: `digest` を実行し `articles/` を生成する
-  Then: spec 003と同様に `topics` 宣言順にセクション分けされ、`state.json`・`logs/skipped/`への
-        記録もキーワードモードと同じ規約に従う
+- `[vitest]` Given: モックしたAnthropic APIの応答はJSONとして妥当だが期待するスキーマと異なる
+  (例: `topic`/`relevance` フィールドが欠落) / When: `classify` を呼ぶ
+  Then: 同様に `fallback` の結果が返り、`errorType: "llm_classification_failed"` として記録される
+
+- `[vitest]` Given: モックしたAnthropic APIの応答はスキーマとして妥当だが、`topics` に存在しない
+  `topic` 名を含む記事が1件ある / When: `classify` を呼ぶ
+  Then: `fallback` へは切り替わらず、当該記事のみ `relevance: "skip"` として扱われ、他の記事は
+        Anthropicの分類結果がそのまま使われる
+
+### 実API疎通確認(手動)
+
+- `[手動]` Given: 実際の `ANTHROPIC_API_KEY` と `config.yaml` の `llm.enabled: true` を設定した
+  環境 / When: `digest` を実行する
+  Then: 実際のAnthropic APIへリクエストが送られ、エラーなく分類結果が得られて `articles/` に
+        反映される(モックでは検証できない実際のAPI仕様・認証・レスポンス形式の疎通確認)
 
 ## スコープ外(今回やらないこと)
 
