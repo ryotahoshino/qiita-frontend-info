@@ -1,4 +1,5 @@
 import type { NewsItem } from "../collectors/types.js";
+import type { Classifier } from "./classifier.js";
 
 export interface Topic {
   name: string;
@@ -59,4 +60,15 @@ export function classify(item: NewsItem, topics: Topic[]): Classification {
   }
 
   return { topic: "", relevance: "skip" };
+}
+
+// 既存の classify() を Classifier インターフェースとして提供する(contracts/classifier-interface.md)。
+// topicsMarkdown は使用しない(キーワードマッチはパース済みの topics のみで完結するため)。
+export function createKeywordClassifier(): Classifier {
+  return {
+    name: "keyword",
+    async classify(items: NewsItem[], topics: Topic[]): Promise<Classification[]> {
+      return items.map((item) => classify(item, topics));
+    },
+  };
 }
