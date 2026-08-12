@@ -41,6 +41,13 @@
      Name: `ANTHROPIC_API_KEY`、Value: 発行したAPIキー、で登録する
    - APIキーはコード・config・テストに直書きしないこと(`.env.local` / GitHub Secrets経由でのみ渡す)
 
+5. **(推奨)ブランチ保護ルールを設定する**
+   `main` へのマージ前に `.github/workflows/ci.yml`(`pnpm test` ・型チェック)が必ず通ることを
+   強制したい場合は、このリポジトリの `Settings > Branches > Branch protection rules` から
+   `main` を対象に「Require status checks to pass before merging」を有効化し、`ci` ジョブを
+   必須チェックに追加する。この設定操作自体は任意のGitHub UI操作であり、`ci.yml` の動作自体には
+   影響しない(未設定でもCIは実行されるが、チェック失敗時にマージをブロックしなくなる)。
+
 ## Configuration
 
 `config.yaml.example` をコピーして `config.yaml` を作成する。
@@ -54,8 +61,12 @@
 ```bash
 pnpm install
 pnpm test
+pnpm run typecheck
 pnpm run digest
 ```
+
+`main` へのPull Request作成時・push時は `.github/workflows/ci.yml` が自動的に
+`pnpm test` と `pnpm run typecheck` を実行する。
 
 開発プロセスは仕様駆動([specs/README.md](specs/README.md))。
 
