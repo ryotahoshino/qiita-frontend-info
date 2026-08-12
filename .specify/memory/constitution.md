@@ -74,12 +74,13 @@ Collector追加時はフィクスチャ(実レスポンスの縮小版)を `test
 | 001-rss-collector | RSS収集 → articles/保存 → Qiita限定共有投稿の一気通貫パイプライン | done | 完了・main統合済み |
 | 002-scheduled-run | GitHub Actions定期実行、config.yaml自動生成、JST日付対応、README Setup節 | done | 完了・main統合済み |
 | 003-topics-filter | TOPICS.mdによるキーワードマッチフィルタリング、Rendererのトピック別セクション化 | done | 完了・main統合済み(PR #3) |
-| 004-llm-classification | LLMありモード(オプトイン)。`Classifier`インターフェース化、`AnthropicClassifier`(fallback付き)、プロンプトインジェクション対策 | approved | 実装完了(`src/core/classifier.ts`、`src/core/anthropicClassifier.ts`、`src/core/topicMatcher.ts`の`createKeywordClassifier`、`src/digest.ts`、`src/main.ts`)。`pnpm test` 62件・`tsc --noEmit` ともにpass。実際の`ANTHROPIC_API_KEY`での疎通確認([手動]AC)は未実施(要人手)。`feat/004-llm-classification` ブランチ、main未統合(PR前) |
+| 004-llm-classification | LLMありモード(オプトイン)。`Classifier`インターフェース化、`AnthropicClassifier`(fallback付き)、プロンプトインジェクション対策 | done | 完了・main統合済み(PR #4)。実際の`ANTHROPIC_API_KEY`での疎通確認([手動]AC)はコスト都合で保留中(spec.md参照) |
+| 005-pr-trigger-ci | PRトリガーでのCI整備。`.github/workflows/ci.yml`新規追加(pull_request/main push時にtypecheck+test)、spec 002の既知のギャップを解消 | approved | 実装完了(`.github/workflows/ci.yml`、`package.json`の`typecheck`スクリプト、`tests/typecheckScript.spec.ts`等3件)。`pnpm test` 65件・`tsc --noEmit` ともにpass。実際にPRを作成してのトリガー確認([手動]AC)は未実施(要人手)。`feat/005-pr-trigger-ci` ブランチ、main未統合(PR前) |
 
 今後の方針(`docs/DESIGN.md` ロードマップ準拠、番号は仮):
 
-1. **004をmainへ統合**: `feat/004-llm-classification` のPRを作成・マージする(マージ前に
-   実際の`ANTHROPIC_API_KEY`での疎通確認を人手で実施すること)
+1. **005をmainへ統合**: `feat/005-pr-trigger-ci` のPRを作成・マージする(マージ後、実際に
+   PRを作成して`ci.yml`がトリガーされることを人手で確認すること)
 2. **GitHubReleasesCollector**(別spec、番号未定): `src/collectors/` にプラグイン追加
 3. **v0.3**: `logs/skipped/` をLLMに分析させ `TOPICS.md` への追記案をPRとして自動作成
 

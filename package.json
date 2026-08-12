@@ -6,7 +6,8 @@
   "scripts": {
     "digest": "tsx src/main.ts",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
     "fast-xml-parser": "^4.5.0",

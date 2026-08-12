@@ -36,17 +36,17 @@ description: "Task list for spec 005: PRトリガーでのCI整備"
 **Goal**: `ci.yml`・`package.json`の`typecheck`スクリプトが未実装の状態でこれらを検証する
 vitestテストを先に用意する。
 
-- [ ] T001 [P] [TESTS] `tests/typecheckScript.spec.ts` を新規作成し、`package.json`を読み込んで
+- [X] T001 [P] [TESTS] `tests/typecheckScript.spec.ts` を新規作成し、`package.json`を読み込んで
       `scripts.typecheck` が `"tsc --noEmit -p tsconfig.json"` であることを検証する
       (data-model.md「package.json scripts」参照。この時点では`typecheck`スクリプトが
       存在しないため失敗する)
-- [ ] T002 [P] [TESTS] `tests/workflowVersions.spec.ts` を新規作成し、`yaml`パッケージで
+- [X] T002 [P] [TESTS] `tests/workflowVersions.spec.ts` を新規作成し、`yaml`パッケージで
       `.github/workflows/daily.yml` と `.github/workflows/ci.yml` をパースし、
       `pnpm/action-setup@`で始まる`uses`のstepの`with.version`、`actions/setup-node@`で
       始まる`uses`のstepの`with.node-version`をそれぞれ抽出して一致することを検証する
       (research.md #1、data-model.md「WorkflowActionVersion」参照。`ci.yml`が存在しないため
       失敗する)
-- [ ] T003 [P] [TESTS] `tests/ciSecrets.spec.ts` を新規作成し、`.github/workflows/ci.yml` の
+- [X] T003 [P] [TESTS] `tests/ciSecrets.spec.ts` を新規作成し、`.github/workflows/ci.yml` の
       生テキストに文字列 `secrets.` が含まれないことを検証する(research.md #2参照。
       `ci.yml`が存在しないため失敗する)
 
@@ -59,9 +59,9 @@ vitestテストを先に用意する。
 **Goal**: `package.json`の`typecheck`スクリプトと`.github/workflows/ci.yml`を実装し、
 T001〜T003をgreenにする。
 
-- [ ] T004 [WORKFLOW] `package.json` の `scripts` に
+- [X] T004 [WORKFLOW] `package.json` の `scripts` に
       `"typecheck": "tsc --noEmit -p tsconfig.json"` を追加する(T001が green になることを確認する)
-- [ ] T005 [WORKFLOW] `.github/workflows/ci.yml` を新規作成する。
+- [X] T005 [WORKFLOW] `.github/workflows/ci.yml` を新規作成する。
       トリガー: `pull_request`(branches: `[main]`)と`push`(branches: `[main]`)。
       ジョブ: `ubuntu-latest`、`actions/checkout@v4` → `pnpm/action-setup@v4`(version: 9)→
       `actions/setup-node@v4`(node-version: 22, cache: pnpm)→
@@ -76,12 +76,12 @@ T001〜T003をgreenにする。
 
 ## Phase 4: ドキュメント更新(DOCS)
 
-- [ ] T006 [DOCS] `README.md` の `Setup` 節に、ブランチ保護ルール
+- [X] T006 [DOCS] `README.md` の `Setup` 節に、ブランチ保護ルール
       (`Settings > Branches > Branch protection rules` で `main` に対し
       「Require status checks to pass before merging」を有効化し、`ci.yml`のジョブを
       必須チェックに追加する)の**手順**を記載する(実際の設定操作自体はスコープ外。
       spec 002のQIITA_TOKEN登録手順の記載パターンに合わせる)
-- [ ] T007 [DOCS] `specs/002-scheduled-run/spec.md` の「スコープ外」にある
+- [X] T007 [DOCS] `specs/002-scheduled-run/spec.md` の「スコープ外」にある
       「PR時に`pnpm test`を自動実行するCIの追加。現状PRトリガーのテスト実行が無いため...
       既知のギャップとして残す」という記述を、spec 005で解消済みである旨に更新する
 
@@ -89,11 +89,11 @@ T001〜T003をgreenにする。
 
 ## Phase 5: Polish & 検証
 
-- [ ] T008 [P] `pnpm test` を実行し全件green、`tsc --noEmit` をエラーゼロにする
+- [X] T008 [P] `pnpm test` を実行し全件green、`tsc --noEmit` をエラーゼロにする
       (ループで修正する。前提: T001〜T005完了)
-- [ ] T009 [P] `specs/005-pr-trigger-ci/quickstart.md` の手動検証(実際にPull Requestを
+- [ ] T009 [P] (未実施・要人手) `specs/005-pr-trigger-ci/quickstart.md` の手動検証(実際にPull Requestを
       作成し `ci.yml` がトリガーされることの確認、spec.mdの`[手動]`AC)を実施する
-- [ ] T010 変更をコミットする(CLAUDE.md/Constitution の「作業単位ごとにコミット」規約に従う)
+- [X] T010 変更をコミットする(CLAUDE.md/Constitution の「作業単位ごとにコミット」規約に従う)
 
 ---
 
