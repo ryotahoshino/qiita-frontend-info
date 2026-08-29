@@ -1,0 +1,9 @@
+[
+  {
+    "timestamp": "2026-08-29T03:25:51.691Z",
+    "phase": "collect",
+    "errorType": "collector_fetch_failed",
+    "message": "Entity expansion limit exceeded: 1100 > 1000",
+    "source": "JSer.info"
+  }
+]
